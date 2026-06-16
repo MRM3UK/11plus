@@ -1,0 +1,40 @@
+name: Fetch Stream Links
+
+on:
+  schedule:
+    # Run every 12 minutes
+    - cron: '*/12 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-streams:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4 lxml
+
+      - name: Fetch stream links
+        run: python scripts/fetch_stream.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add playlist.m3u channels.json
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          git diff --staged --quiet || git commit -m "🔄 Updated stream links - ${TIMESTAMP}"
+          git push
